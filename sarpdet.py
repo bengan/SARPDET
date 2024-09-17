@@ -1,7 +1,7 @@
 import csv
 import argparse
 from scapy.all import ARP, Ether, sniff
-
+import datetime
 
 def print_intro():
     print("========================================")
@@ -25,7 +25,8 @@ def detect_arp_spoofing(log_filename, sniff_duration=60):
                 detected_devices[source_mac] = source_ip
             else:
                 if detected_devices[source_mac] != source_ip:
-                    print(f"Warning: ARP spoofing detected for MAC {source_mac} (IP {source_ip})")
+                    current_time = datetime.datetime.now()
+                    print(f"Warning: ARP spoofing detected for MAC {source_mac} (IP {source_ip}) at {current_time}")
 
     print("ARP Spoofing Detection Started...")
 
