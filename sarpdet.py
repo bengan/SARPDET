@@ -1,7 +1,7 @@
 import csv
 import argparse
 from scapy.all import ARP, Ether, sniff
-
+import datetime
 
 def print_intro():
     print("========================================")
@@ -9,8 +9,8 @@ def print_intro():
     print("=            sarpdet v.0.1.0           =")
     print("=       Simple ARP Detection Tool      =")
     print("=         by Roberto Dillon            =")
-    print("=     https://github.com/rdillon73     =") 
-    print("=                                      =") 
+    print("=     https://github.com/rdillon73     =")
+    print("=                                      =")
     print("========================================")
 
 def detect_arp_spoofing(log_filename, sniff_duration=60):
@@ -20,12 +20,15 @@ def detect_arp_spoofing(log_filename, sniff_duration=60):
         if ARP in pkt and Ether in pkt:
             source_mac = pkt[Ether].src
             source_ip = pkt[ARP].psrc
-
-            if source_mac not in detected_devices:
+            # Ignore 0.0.0.0 in db but print a heads up
+            if source_mac not in detected_devices and not source_ip == "0.0.0.0":
                 detected_devices[source_mac] = source_ip
+            elif source_ip == "0.0.0.0":
+                print(f"Use of 0.0.0.0. Probably restarted devide and/or new DHCP: MAC {source_mac}, IP {source_ip}")
             else:
                 if detected_devices[source_mac] != source_ip:
-                    print(f"Warning: ARP spoofing detected for MAC {source_mac} (IP {source_ip})")
+                    current_time = datetime.datetime.now()
+                    print(f"Warning: ARP spoofing detected for MAC {source_mac} (IP {source_ip}) at {current_time}")
 
     print("ARP Spoofing Detection Started...")
 
@@ -33,7 +36,7 @@ def detect_arp_spoofing(log_filename, sniff_duration=60):
     sniff(prn=arp_monitor_callback, filter="arp", store=0, timeout=sniff_duration)
 
     # Write the results to a CSV log file; change mode to 'a' to append data if you are using the same log file (running this as a cronjob, perhaps?) 
-    with open(log_filename, mode='w', newline='') as log_file:
+    with open(log_filename, mode='a', newline='') as log_file:
         fieldnames = ['MAC Address', 'IP Address']
         writer = csv.DictWriter(log_file, fieldnames=fieldnames)
         writer.writeheader()
